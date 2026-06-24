@@ -1,0 +1,3 @@
+# Local editor / tooling config — not part of the app
+.claude/
+.DS_Store

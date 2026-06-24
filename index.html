@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chromatic Tuner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="tuner">
+      <!-- Top bar: shows the mode (we only build the chromatic one) -->
+      <header class="top-bar">
+        <div class="mode">
+          <span class="mode-title">Chromatic</span>
+          <span class="mode-sub">Auto-detect any note</span>
+        </div>
+        <div class="auto-badge">AUTO</div>
+      </header>
+
+      <!-- Big readout: the detected note, its octave, and exact frequency -->
+      <section class="readout">
+        <div class="note-name" id="noteName">&mdash;</div>
+        <sub class="note-octave" id="noteOctave"></sub>
+        <div class="frequency" id="frequency">0.0 Hz</div>
+      </section>
+
+      <!-- The vertical pitch chart -->
+      <section class="chart" id="chart">
+        <!-- flat (left) / sharp (right) markers, like the GuitarTuna screenshot -->
+        <span class="accidental flat">&flat;</span>
+        <span class="accidental sharp">&sharp;</span>
+
+        <!-- fixed bright line down the center = perfectly in tune -->
+        <div class="center-line"></div>
+
+        <!-- pitch over time: newest reading at the top, scrolling downward -->
+        <svg class="trace" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <!-- fade the trail out as it gets older (toward the bottom) -->
+            <linearGradient id="traceFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="currentColor" stop-opacity="1" />
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0.04" />
+            </linearGradient>
+          </defs>
+          <path class="trace-line" id="traceLine" d="" stroke="url(#traceFade)"
+                vector-effect="non-scaling-stroke" />
+        </svg>
+
+        <!-- reading bubble: sits at the head of the trace and slides L/R -->
+        <div class="bubble" id="bubble">
+          <span class="cents-bubble" id="centsBubble">0</span>
+          <span class="direction-pill" id="directionPill">Tune up</span>
+        </div>
+      </section>
+
+      <p class="status" id="status">Allow microphone access to start…</p>
+
+      <!-- Live tuning controls: algorithm switch + parameter sliders -->
+      <details class="settings">
+        <summary>Settings</summary>
+
+        <label class="setting">
+          <span class="setting-label">Algorithm</span>
+          <select id="algoSelect">
+            <option value="classic">Classic autocorrelation</option>
+            <option value="mpm">McLeod (octave-safe)</option>
+          </select>
+        </label>
+
+        <!-- one slider per entry in CONTROLS is generated here by tuner.js -->
+        <div id="sliders"></div>
+      </details>
+    </main>
+
+    <script src="tuner.js"></script>
+  </body>
+</html>

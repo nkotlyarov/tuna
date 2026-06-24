@@ -1,0 +1,295 @@
+/* ---------------------------------------------------------------
+   Chromatic Tuner — styling
+   Dark theme inspired by the GuitarTuna screenshot:
+   deep navy panel, teal accents, green = in tune, red = off.
+   --------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0b1016;
+  --panel: #121a24;
+  --teal: #1dd3b0;
+  --green: #2ecc71;
+  --red: #ff5d6c;
+  --orange: #ff8a3d;
+  --text: #eaf2f8;
+  --muted: #6b7c8f;
+  --grid: rgba(255, 255, 255, 0.05);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(circle at 50% 0%, #16202c 0%, var(--bg) 60%);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.tuner {
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Top bar -------------------------------------------------- */
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mode-title {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.mode-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auto-badge {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+/* ---- Big note readout ----------------------------------------- */
+
+.readout {
+  text-align: center;
+  margin: 20px 0 8px;
+}
+
+.note-name {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.note-octave {
+  font-size: 22px;
+  color: var(--muted);
+  vertical-align: baseline;
+}
+
+.frequency {
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- The vertical pitch chart --------------------------------- */
+
+.chart {
+  position: relative;
+  height: 280px;
+  margin: 16px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  /* faint grid: vertical + horizontal lines every 40px */
+  background:
+    repeating-linear-gradient(to right, var(--grid) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(to bottom, var(--grid) 0 1px, transparent 1px 40px),
+    #0c131b;
+}
+
+/* flat / sharp labels in the top corners */
+.accidental {
+  position: absolute;
+  top: 12px;
+  font-size: 24px;
+  color: var(--muted);
+  z-index: 2;
+}
+.accidental.flat {
+  left: 16px;
+}
+.accidental.sharp {
+  right: 16px;
+}
+
+/* fixed center line = the target (perfectly in tune) */
+.center-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* the scrolling pitch-over-time trace, filling the whole chart.
+   color is set here; the gradient fades it out toward the bottom (older). */
+.trace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--orange);
+  transition: color 0.2s;
+}
+.chart.in-tune .trace {
+  color: var(--green);
+  filter: drop-shadow(0 0 5px var(--green));
+}
+.trace-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* anchor that slides horizontally to the current pitch; holds the pills */
+.bubble {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 0;
+  transform: translateX(-50%);
+  transition: left 0.08s linear;
+}
+
+/* the white pill with the cents number (e.g. -5), centered on the anchor */
+.cents-bubble {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-50%);
+  background: #fff;
+  color: var(--red);
+  border: 2px solid var(--red);
+  font-weight: 800;
+  font-size: 20px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: center;
+  transition: color 0.2s, border-color 0.2s;
+}
+.chart.in-tune .cents-bubble {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+/* the grey "Tune up / Tune down" pill floating to the right of the bubble */
+.direction-pill {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  transform: translateX(40px);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* the bubble + direction pill only show while a note is being detected */
+.cents-bubble,
+.direction-pill {
+  visibility: hidden;
+}
+.bubble.active .cents-bubble,
+.bubble.active .direction-pill {
+  visibility: visible;
+}
+
+/* ---- Status --------------------------------------------------- */
+
+.status {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 12px;
+  min-height: 18px;
+}
+
+/* ---- Settings panel ------------------------------------------- */
+
+.settings {
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+.settings > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+  list-style: none;
+  user-select: none;
+}
+.settings > summary::-webkit-details-marker {
+  display: none;
+}
+.settings > summary::before {
+  content: "⚙ ";
+}
+.settings[open] > summary {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.setting-label {
+  flex: 1 1 45%;
+  color: var(--muted);
+}
+
+.setting input[type="range"] {
+  flex: 1 1 40%;
+  accent-color: var(--teal);
+}
+
+.setting select {
+  flex: 1 1 55%;
+  background: #0c131b;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.setting-value {
+  width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.setting.disabled {
+  opacity: 0.4;
+}
