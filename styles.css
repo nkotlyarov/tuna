@@ -51,10 +51,28 @@ body {
   min-height: 38px;
 }
 
-/* the rendered GitHub button is an <iframe>; block display drops the inline
-   baseline gap so it centers cleanly against the title */
-.top-bar iframe {
-  display: block;
+/* self-contained "Star on GitHub" button — no external script, so the app
+   stays fully zero-dependency (the trade-off is no live star count) */
+.star-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  background: #0c131b;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+.star-btn:hover {
+  background: #16202c;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.star-btn svg {
+  flex-shrink: 0;
 }
 
 .mode-title {
