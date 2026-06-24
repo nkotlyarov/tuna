@@ -11,10 +11,15 @@
       <!-- Top bar: shows the mode (we only build the chromatic one) -->
       <header class="top-bar">
         <div class="mode">
-          <span class="mode-title">Chromatic</span>
-          <span class="mode-sub">Auto-detect any note</span>
+          <span class="mode-title">Chromatic Tuner</span>
         </div>
-        <div class="auto-badge">AUTO</div>
+        <a class="github-button"
+           href="https://github.com/nkotlyarov/tuna"
+           data-color-scheme="no-preference: dark; light: dark; dark: dark;"
+           data-icon="octicon-star"
+           data-size="large"
+           data-show-count="true"
+           aria-label="Star nkotlyarov/tuna on GitHub">Star</a>
       </header>
 
       <!-- Big readout: the detected note, its octave, and exact frequency -->
@@ -73,5 +78,7 @@
     </main>
 
     <script src="tuner.js"></script>
+    <!-- renders the GitHub Star button in the footer above -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
   </body>
 </html>
