@@ -26,7 +26,7 @@ const NOTE_NAMES = [
 const MIN_FREQ = 70; // lowest pitch we try to detect (guitar low E is ~82 Hz)
 const MAX_FREQ = 1500; // highest pitch we bother detecting (well above a guitar)
 
-const HISTORY_LEN = 120; // how many readings we keep (~2 seconds at 60fps)
+const HISTORY_LEN = 260; // readings kept on the chart (~4.3s at 60fps); higher = slower scroll
 const VIEW = 100; // the SVG viewBox is 100 x 100 user units
 
 // Frequencies (Hz) where smoothing switches fully to the high / low values;
@@ -50,6 +50,7 @@ const settings = {
   clarityThreshold: 0.4, // MPM: min peak height (0..1) to accept a pitch
   peakRatio: 0.9, // MPM: accept the first peak ≥ this fraction of the tallest
   inTuneCents: 5, // within ±this many cents counts as "in tune"
+  noteHold: 3.0, // seconds to keep the last note on screen after the sound stops
 };
 
 // Description of each slider: which setting it edits and its range. The UI
@@ -64,6 +65,7 @@ const CONTROLS = [
   { key: "clarityThreshold", label: "Clarity threshold", min: 0.1, max: 0.95, step: 0.05, mpmOnly: true },
   { key: "peakRatio", label: "Peak ratio", min: 0.7, max: 0.99, step: 0.01, mpmOnly: true },
   { key: "inTuneCents", label: "In-tune range (±cents)", min: 1, max: 20, step: 1, int: true },
+  { key: "noteHold", label: "Note hold (s)", min: 0.2, max: 4, step: 0.1 },
 ];
 
 // ---- Grab the page elements we will update -----------------------------
@@ -71,7 +73,9 @@ const CONTROLS = [
 const noteNameEl = document.getElementById("noteName");
 const noteOctaveEl = document.getElementById("noteOctave");
 const frequencyEl = document.getElementById("frequency");
+const readoutEl = document.querySelector(".readout");
 const traceLineEl = document.getElementById("traceLine");
+const traceEl = document.querySelector(".trace");
 const bubbleEl = document.getElementById("bubble");
 const centsBubbleEl = document.getElementById("centsBubble");
 const directionPillEl = document.getElementById("directionPill");
@@ -90,6 +94,7 @@ let sampleBuffer = null; // reused array that holds one chunk of samples
 
 let running = false;
 let smoothedMidi = null; // smoothed continuous note number (null = nothing yet)
+let lastCents = null; // last detected cents offset (kept drawing while it fades)
 let lastSoundTime = 0; // when we last heard a real pitch
 let rawWindow = []; // recent raw note numbers, for the median filter
 
@@ -219,19 +224,28 @@ function update() {
     midi = Math.round(smoothedMidi);
     cents = (smoothedMidi - midi) * 100; // distance to the nearest note, in cents
     displayFreq = A4 * Math.pow(2, (smoothedMidi - 69) / 12);
+    lastCents = cents;
   }
 
-  // Push this frame's reading onto the front and drop the oldest. THIS is
-  // what makes the chart scroll downward as time passes.
-  history.unshift(cents);
-  history.pop();
-  drawTrace();
+  const holdMs = settings.noteHold * 1000;
+  const silentMs = performance.now() - lastSoundTime;
 
   if (cents !== null) {
+    // playing: scroll the chart down one step, at full opacity
+    history.unshift(cents);
+    history.pop();
+    drawTrace();
     renderReadout(midi, displayFreq, cents);
-  } else if (performance.now() - lastSoundTime > 600) {
-    // gone quiet for a moment — clear the note readout (but let the trace
-    // keep scrolling so the recent history fades away naturally)
+    setNoteOpacity(1);
+  } else if (lastCents !== null && silentMs < holdMs) {
+    // just stopped: keep the line moving, holding the last value constant,
+    // and fade the whole note + chart out gradually over the hold window
+    history.unshift(lastCents);
+    history.pop();
+    drawTrace();
+    setNoteOpacity(1 - silentMs / holdMs);
+  } else if (lastCents !== null) {
+    // fully faded — clear the chart and note, ready for the next note
     resetReadout();
   }
 }
@@ -308,27 +322,38 @@ function renderReadout(midi, freq, cents) {
   // The bubble rides left/right to match the newest reading.
   const clamped = Math.max(-50, Math.min(50, cents));
   bubbleEl.style.left = 50 + clamped + "%";
-  bubbleEl.classList.add("active");
-
-  const rounded = Math.round(cents);
-  centsBubbleEl.textContent = (rounded > 0 ? "+" : "") + rounded;
 
   const inTune = Math.abs(cents) <= settings.inTuneCents;
   chartEl.classList.toggle("in-tune", inTune);
-  directionPillEl.textContent = inTune
-    ? "In tune"
-    : cents < 0
-    ? "Tune up" // flat: tighten the string
-    : "Tune down"; // sharp: loosen the string
+
+  // In tune → green check (GuitarTuna-style); otherwise show the cents offset.
+  const rounded = Math.round(cents);
+  centsBubbleEl.textContent = inTune ? "✓" : (rounded > 0 ? "+" : "") + rounded;
+
+  // The direction pill is hidden by CSS when in tune, so only the off text shows.
+  directionPillEl.textContent = cents < 0 ? "Tune up" : "Tune down";
 }
 
+// Fade the note + bubble + chart together (0 = gone, 1 = solid). Driven
+// per-frame from the loop so the fade stays in sync with the moving line.
+function setNoteOpacity(v) {
+  readoutEl.style.opacity = v;
+  bubbleEl.style.opacity = v;
+  traceEl.style.opacity = v;
+}
+
+// Clear everything back to the resting (blank) state — used on start / stop
+// and once the fade has fully completed.
 function resetReadout() {
   noteNameEl.innerHTML = "&mdash;";
   noteOctaveEl.textContent = "";
   frequencyEl.textContent = "0.0 Hz";
-  bubbleEl.classList.remove("active");
   chartEl.classList.remove("in-tune");
-  smoothedMidi = null; // so the next note starts smoothing fresh
+  history.fill(null);
+  drawTrace();
+  setNoteOpacity(0);
+  lastCents = null;
+  smoothedMidi = null;
   rawWindow = [];
 }
 
