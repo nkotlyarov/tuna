@@ -99,6 +99,7 @@ let sampleBuffer = null; // reused array that holds one chunk of samples
 let running = false;
 let smoothedMidi = null; // smoothed continuous note number (null = nothing yet)
 let heldMidi = null; // shown note; sticky (hysteresis) so it doesn't flip at boundaries
+let historyMidi = null; // note context for the cents history; changes break the trace
 let lastCents = null; // last detected cents offset (kept drawing while it fades)
 let lastSoundTime = 0; // when we last heard a real pitch
 let rawWindow = []; // recent raw note numbers, for the median filter
@@ -229,12 +230,22 @@ function update() {
     // Pick the shown note with hysteresis: only switch once the pitch is
     // clearly past the halfway point, so sitting on the ±50 boundary doesn't
     // flip-flop the note (and fling the trace across the chart).
+    const previousHeldMidi = heldMidi;
     if (
       heldMidi === null ||
       Math.abs(smoothedMidi - heldMidi) > 0.5 + NOTE_HYSTERESIS
     ) {
       heldMidi = Math.round(smoothedMidi);
     }
+
+    // Cents are only meaningful relative to the currently displayed note.
+    // If the note changes, old points belong to the previous note's context,
+    // so break the trace instead of drawing them in the new context.
+    if (historyMidi !== null && heldMidi !== previousHeldMidi) {
+      history.fill(null);
+    }
+    historyMidi = heldMidi;
+
     midi = heldMidi;
     // clamp so a near-boundary reading pins at the edge instead of wrapping
     cents = Math.max(-50, Math.min(50, (smoothedMidi - heldMidi) * 100));
@@ -370,6 +381,7 @@ function resetReadout() {
   lastCents = null;
   smoothedMidi = null;
   heldMidi = null;
+  historyMidi = null;
   rawWindow = [];
 }
 
