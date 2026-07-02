@@ -39,6 +39,10 @@ const LO_FREQ = 90;
 // a one-frame octave glitch the median didn't fully remove — get smoothed.
 const NOTE_SNAP_SEMITONES = 2;
 
+// Extra margin (in semitone fractions) past the halfway point before the shown
+// note flips — hysteresis that stops the flip-flop right at the ±50 boundary.
+const NOTE_HYSTERESIS = 0.15;
+
 // ---- Live settings (driven by the Settings panel in the UI) ------------
 
 const settings = {
@@ -94,6 +98,7 @@ let sampleBuffer = null; // reused array that holds one chunk of samples
 
 let running = false;
 let smoothedMidi = null; // smoothed continuous note number (null = nothing yet)
+let heldMidi = null; // shown note; sticky (hysteresis) so it doesn't flip at boundaries
 let lastCents = null; // last detected cents offset (kept drawing while it fades)
 let lastSoundTime = 0; // when we last heard a real pitch
 let rawWindow = []; // recent raw note numbers, for the median filter
@@ -221,8 +226,18 @@ function update() {
       smoothedMidi = smoothedMidi * (1 - alpha) + medMidi * alpha;
     }
 
-    midi = Math.round(smoothedMidi);
-    cents = (smoothedMidi - midi) * 100; // distance to the nearest note, in cents
+    // Pick the shown note with hysteresis: only switch once the pitch is
+    // clearly past the halfway point, so sitting on the ±50 boundary doesn't
+    // flip-flop the note (and fling the trace across the chart).
+    if (
+      heldMidi === null ||
+      Math.abs(smoothedMidi - heldMidi) > 0.5 + NOTE_HYSTERESIS
+    ) {
+      heldMidi = Math.round(smoothedMidi);
+    }
+    midi = heldMidi;
+    // clamp so a near-boundary reading pins at the edge instead of wrapping
+    cents = Math.max(-50, Math.min(50, (smoothedMidi - heldMidi) * 100));
     displayFreq = A4 * Math.pow(2, (smoothedMidi - 69) / 12);
     lastCents = cents;
   }
@@ -354,6 +369,7 @@ function resetReadout() {
   setNoteOpacity(0);
   lastCents = null;
   smoothedMidi = null;
+  heldMidi = null;
   rawWindow = [];
 }
 
