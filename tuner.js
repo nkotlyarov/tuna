@@ -352,9 +352,9 @@ function renderReadout(midi, freq, cents) {
   const inTune = Math.abs(cents) <= settings.inTuneCents;
   chartEl.classList.toggle("in-tune", inTune);
 
-  // In tune → green check (GuitarTuna-style); otherwise show the cents offset.
+  // Always show the cents offset; the bubble color carries the in-tune state.
   const rounded = Math.round(cents);
-  centsBubbleEl.textContent = inTune ? "✓" : (rounded > 0 ? "+" : "") + rounded;
+  centsBubbleEl.textContent = (rounded > 0 ? "+" : "") + rounded;
 
   // The direction pill is hidden by CSS when in tune, so only the off text shows.
   directionPillEl.textContent = cents < 0 ? "Tune up" : "Tune down";

@@ -218,7 +218,7 @@ body {
   border-top-color: var(--red);
   transition: border-top-color 0.2s;
 }
-/* in tune: bubble turns green and shows a ✓ (set in JS) */
+/* in tune: bubble turns green while still showing the cents value */
 .chart.in-tune .cents-bubble {
   background: var(--green);
   font-size: 20px;
@@ -226,7 +226,7 @@ body {
 .chart.in-tune .cents-bubble::after {
   border-top-color: var(--green);
 }
-/* the ✓ already means "in tune", so hide the text direction pill then */
+/* the green bubble already means "in tune", so hide the text direction pill then */
 .chart.in-tune .direction-pill {
   display: none;
 }
